@@ -13,10 +13,10 @@ body{
 .row{
 	width: 100%;
 	position: relative;
-	padding: 0 0 50px;
+	margin: 0 0 80px;
 
 	&:last-of-type{
-		padding-bottom: 0;
+	padding-bottom: 0;
 	}
 }
 .row_outer_parent{
