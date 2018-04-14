@@ -1,0 +1,7 @@
+npm-debug.log
+.gitignore
+test/
+package-lock.json
+./gulpfile.js
+.eslintrc.js
+.bowerrc

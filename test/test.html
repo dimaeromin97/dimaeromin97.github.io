@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>smooth-sticky</title>
+	<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+	<header id="header">
+		<h1>Header</h1>
+	</header>
+	<div id="middle">
+		<div class="middle_inner">
+			<div class="row">
+				<div class="row_outer_parent">
+					<div class="row_outer">
+						<div class="row_inner">
+							<div class="row_margin 141214">
+								<div class="column one_fourth column_sticky">
+									<div class="column_inner">
+										<div style="height: 650px; border: 1px solid red; background-color: #c3c3c3; text-align: center;">
+											<h2>1</h2>
+											<h2>sticky</h2>
+										</div>
+									</div>
+								</div>
+								<div class="column one_half">
+									<div class="column_inner">
+										<div style="height: 1200px; border: 1px solid  transparent; background-color: #b3b0b0; text-align: center;">
+											<h2>2</h2>
+											<h2>sticky</h2>
+										</div>
+									</div>
+								</div>
+								<div class="column one_fourth ">
+									<div class="column_inner">
+										<div style="height: 700px; border: 1px solid blue; background-color: #929292; text-align: center;">
+											<h2>3</h2>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+
+
+			<div class="row">
+				<div class="row_outer_parent">
+					<div class="row_outer">
+						<div class="row_inner">
+							<div class="row_margin 141214">
+								<div class="column one_fourth">
+									<div class="column_inner">
+										<div style="height: 650px; border: 1px solid transparent; background-color: #c3c3c3; text-align: center;">
+											<h2>4</h2>
+										</div>
+									</div>
+								</div>
+								<div class="column one_half">
+									<div class="column_inner">
+										<div style="height: 1000px; border: 1px solid  transparent; background-color: #b3b0b0; text-align: center;">
+											<h2>5</h2>
+										</div>
+									</div>
+								</div>
+								<div class="column one_fourth">
+									<div style="height: 700px; border: 1px solid transparent; background-color: #929292; text-align: center;">
+										<h2>6</h2>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+
+
+
+		</div>
+	</div>
+
+	<script type="text/javascript" src="../sources/smooth-sticky.js"></script>
+	<script type="text/javascript">
+		var smoothStickyMethod = new smoothSticky(".column_sticky", {
+			offsetTopElement: document.querySelector("#header")
+		});
+	</script>
+</body>
+</html>
