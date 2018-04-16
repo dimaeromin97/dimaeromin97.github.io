@@ -119,10 +119,8 @@
 					if(scroll_bottom < sticky_parent_offset.bottom){
 						setStickyPositions(sticky_element, sticky_down);
 					} else{
-						setStickyPositions(sticky_element, (sticky_parent_offset.height - sticky_offset.height) - parseInt(getComputedStyle(sticky_element).marginBottom));
+						setStickyPositions(sticky_element, (sticky_parent_offset.height - sticky_offset.height) -  parseInt(getComputedStyle(sticky_element).marginBottom));
 					}
-				} else if(sticky_parent_offset.bottom < scroll_bottom){
-					setStickyPositions(sticky_element, (sticky_parent_offset.height - sticky_offset.height) - parseInt(getComputedStyle(sticky_element).marginBottom));
 				}
 				
 			});
