@@ -110,19 +110,20 @@
 						setStickyPositions(sticky_element, 0);
 					}
 				} else if(
-					!scroll_to_top &&
 					sticky_offset.bottom < scroll_bottom &&
 					sticky_parent_offset.top < scroll_top
 				){
-					var sticky_down = Math.max(scroll_bottom, sticky_offset.bottom) - Math.min(scroll_bottom, sticky_offset.bottom) + sticky_top_rel - options.indent.bottom;
+					var sticky_down = (Math.max(scroll_bottom, sticky_offset.bottom) - Math.min(scroll_bottom, sticky_offset.bottom) + sticky_top_rel) - options.indent.bottom;
 
 					if(scroll_bottom < sticky_parent_offset.bottom){
 						setStickyPositions(sticky_element, sticky_down);
 					} else{
 						setStickyPositions(sticky_element, (sticky_parent_offset.height - sticky_offset.height) -  parseInt(getComputedStyle(sticky_element).marginBottom));
 					}
+				} else if(sticky_parent_offset.bottom < scroll_bottom){
+					setStickyPositions(sticky_element, (sticky_parent_offset.height - sticky_offset.height) -  parseInt(getComputedStyle(sticky_element).marginBottom));
 				}
-				
+
 			});
 
 			session.pageYOffset = pageYOffset;
