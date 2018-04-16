@@ -1,6 +1,6 @@
 {
   "name": "smooth-sticky.js",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "",
   "main": "gulp.js",
   "scripts": {
@@ -12,7 +12,6 @@
     "browser-sync": "^2.23.6",
     "gulp": "^3.9.1",
     "gulp-concat": "^2.6.1",
-    "gulp-jsmin": "^0.1.5",
     "gulp-rename": "^1.2.2",
     "gulp-sourcemaps": "^2.6.4",
     "gulp-uglify": "^3.0.0"
