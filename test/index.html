@@ -91,6 +91,11 @@
 
 		</div>
 	</div>
+	
+	<div id="adminbar">
+		adminbar
+	</div>
+	<div id="statsFps"></div>
 
 	<script type="text/javascript" src="../sources/smooth-sticky.js"></script>
 	<script type="text/javascript" src="./prezent.js"></script>
@@ -99,7 +104,7 @@
 		var stats = new Stats();
 
 		stats.showPanel( 0 );
-		document.body.appendChild( stats.dom );
+		document.getElementById("statsFps").appendChild( stats.dom );
 
 		function animate() {
 			stats.begin();

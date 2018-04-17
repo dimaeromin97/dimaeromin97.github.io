@@ -28,7 +28,7 @@
 	function smoothSticky(selector_or_node, options){
 		var options_default = {
 			offsetTop: 0,
-			offsetTopElement: false,
+			offsetTopElements: false,
 			scroll: {
 				delay: 66,
 				timeout_fn: null,
@@ -71,11 +71,10 @@
 						setTimeout(function(){
 							setStickyPositions(this_index.element, parrent_offset.height - element_offset.height);
 						}, 66)
-					} else{
+					} else if(this[index].is_active){
 						scrollEnd(smoothStickyMove);
 					}
 				}
-
 			}.bind(this));
 		};
 		sticky_element_all.__proto__.scroll = function() {
@@ -90,6 +89,7 @@
 
 		function smoothStickyMove(){
 			var scroll_top = getScreenOffsetTop();
+			console.log("scroll_top: ", scroll_top)
 			var pageYOffset = window.pageYOffset;
 			var scroll_bottom = pageYOffset + window.innerHeight;
 			var scroll_to_top = (session.pageYOffset > pageYOffset);
@@ -103,6 +103,7 @@
 				var sticky_parent_offset = getPostOnPage(sticky_parent);
 				var sticky_top_rel = sticky_offset.top - sticky_parent_offset.top;
 
+					console.log("scroll_top: ", scroll_top)
 					
 				if(
 					scroll_to_top &&
@@ -124,7 +125,7 @@
 					var sticky_down = (Math.max(scroll_bottom, sticky_offset.bottom) - Math.min(scroll_bottom, sticky_offset.bottom) + sticky_top_rel) - options.indent.bottom;
 
 					if(scroll_bottom < sticky_parent_offset.bottom){
-						setStickyPositions(sticky_element, sticky_down);
+						setStickyPositions(sticky_element, Math.max(sticky_down, 0));
 					} else{
 						setStickyPositions(sticky_element, (sticky_parent_offset.height - sticky_offset.height) -  parseInt(getComputedStyle(sticky_element)["margin-bottom"], 10));
 					}
@@ -135,11 +136,17 @@
 		}
 
 		function getMethodScreenOffsetTop(){
-			if(options.offsetTopElement && options.offsetTopElement.tagName){
-				return function(){
-					options.offsetTop = options.offsetTopElement.offsetHeight;
+			if(options.offsetTopElements){
+				var offsetTopElements = Array.isArray(options.offsetTopElements) ? options.offsetTopElements : [options.offsetTopElements];
 
-					return  window.pageYOffset + options.offsetTop;
+				return function(){
+					options.offsetTop = window.pageYOffset;
+
+					forEach(offsetTopElements, function(item){
+						options.offsetTop += item.offsetHeight;
+					});
+
+					return options.offsetTop;
 				};
 			}
 
@@ -261,7 +268,7 @@
 			$.fn.smoothSticky = function(options){
 				window.smoothSticky(
 					this.toArray(), 
-					ObjectAssign(options, { offsetTopElement: options.offsetTopElement[0] })
+					ObjectAssign(options, { offsetTopElements: options.offsetTopElements.toArray() })
 				);
 			}
 		})(window.jQuery);

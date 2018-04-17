@@ -6,10 +6,38 @@
 	box-sizing: border-box;
 }
 
+html{
+	margin-top: 32px !important;
+	height: 100%;
+	overflow-x: hidden;
+	position: relative;
+}
+
 body{
 	margin: 0;
-	width: 100%;
+	overflow-x: hidden;
+	position: relative;
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
 	font-family: "Arial", sans-serif;
+}
+
+#statsFps div{
+	top: 35px !important;
+}
+
+#adminbar{
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 32px;
+	z-index: 99999;
+	background: #23282d;
+	text-align: center;
+	line-height: 32px;
+	text-transform: uppercase;
+	color: #fff;
 }
 
 .row{
@@ -96,7 +124,6 @@ body{
 #header{
 	position: fixed;
 	width: 100%;
-	top: 0;
 	z-index: 5;
 	width: 100%;
 	background-color: #ccc;

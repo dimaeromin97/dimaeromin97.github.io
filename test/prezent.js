@@ -1,7 +1,10 @@
 window.addEventListener("load", function() {
 
 	var smoothStickyMethod = new smoothSticky(".column_sticky", {
-		offsetTopElement: document.querySelector("#header"),
+		offsetTopElements: [
+			document.querySelector("#header"), 
+			document.querySelector("#adminbar")
+		],
 		indent: {
 			top: 30,
 			bottom: 30
@@ -13,7 +16,11 @@ window.addEventListener("load", function() {
 	//OR
 
 	$(".column_sticky").smoothSticky({
-		offsetTopElement: document.querySelector("#header")
+		offsetTopElements: $("#header, #adminbar"),
+		indent: {
+			top: 30,
+			bottom: 30
+		}
 	});
 
 });
