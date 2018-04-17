@@ -4,28 +4,28 @@
 */
 
 !(function(window){
-	function smoothSticky(selector_or_node, options){
-		var ObjectAssign = (function(){
-				if(Object.assign){
-					return Object.assign;
-				}
+	var ObjectAssign = (function(){
+			if(Object.assign){
+				return Object.assign;
+			}
 
-				return function(to) {
-					for (var s = 1; s < arguments.length; s += 1) {
-					var from = arguments[s];
+			return function(to) {
+				for (var s = 1; s < arguments.length; s += 1) {
+				var from = arguments[s];
 
-						for (var key in from) {
-							if(Object.prototype.hasOwnProperty.call(from, key)){
-								to[key] = from[key];
-							}
+					for (var key in from) {
+						if(Object.prototype.hasOwnProperty.call(from, key)){
+							to[key] = from[key];
 						}
 					}
+				}
 
-					return to;
-				};
-			
-		})();
+				return to;
+			};
+		
+	})();
 
+	function smoothSticky(selector_or_node, options){
 		var options_default = {
 			offsetTop: 0,
 			offsetTopElement: false,
@@ -33,9 +33,7 @@
 				delay: 66,
 				timeout_fn: null,
 			},
-			resize: {
-				min_width: 768
-			},
+			resize: { min_width: 768 },
 			method_sticky: "transform",
 			indent: {
 				top: 0,
@@ -49,14 +47,18 @@
 		var getScreenOffsetTop = getMethodScreenOffsetTop();
 
 		sticky_element_all.__proto__.calculateSize = function(){
+			var do_min_width = window.innerWidth > options.resize.min_width;
+
 			forEach(this, function(item, index){
 				var this_index = item;
 				var element_style = getComputedStyle(this_index.element);
 				var parent_style = getComputedStyle(this_index.parent);
 				var element_margin_side = parseFloat(element_style["margin-left"]) + parseFloat(element_style["margin-right"]);
 				var parent_margin_side = parseFloat(parent_style["margin-left"]) + parseFloat(parent_style["margin-right"]);
-				var item_outer_width = this_index.element.offsetWidth + element_margin_side;
-				var parent_outer_width = this_index.parent.offsetWidth + parent_margin_side;
+				var element_offset = getPostOnPage(this_index.element);
+				var parrent_offset = getPostOnPage(this_index.parent);
+				var item_outer_width = element_offset.width + element_margin_side;
+				var parent_outer_width = parrent_offset.width + parent_margin_side;
 
 				this[index].is_active = (parent_outer_width > item_outer_width);
 
@@ -64,21 +66,25 @@
 					setStickyPositions(this_index.element, 0);
 				}
 
-				if(window.innerWidth > options.resize.min_width){
-					scrollEnd(smoothStickyMove);
+				if(do_min_width){
+					if(element_offset.bottom > parrent_offset.bottom){
+						setTimeout(function(){
+							setStickyPositions(this_index.element, parrent_offset.height - element_offset.height);
+						}, 66)
+					} else{
+						scrollEnd(smoothStickyMove);
+					}
 				}
 
 			}.bind(this));
 		};
-
 		sticky_element_all.__proto__.scroll = function() {
 			scrollEnd(smoothStickyMove);
 		}
-
 		sticky_element_all.__proto__.options = options;
 
-		window.addEventListener('resize', stickyEventResize, false);
 		window.addEventListener('scroll', stickyEventScroll, false);
+		window.addEventListener('resize', stickyEventResize, false);
 		stickyEventResize();
 		smoothStickyMove();
 
@@ -97,6 +103,7 @@
 				var sticky_parent_offset = getPostOnPage(sticky_parent);
 				var sticky_top_rel = sticky_offset.top - sticky_parent_offset.top;
 
+					
 				if(
 					scroll_to_top &&
 					sticky_offset.top > scroll_top &&
@@ -110,6 +117,7 @@
 						setStickyPositions(sticky_element, 0);
 					}
 				} else if(
+					!scroll_to_top &&
 					sticky_offset.bottom < scroll_bottom &&
 					sticky_parent_offset.top < scroll_top
 				){
@@ -118,30 +126,12 @@
 					if(scroll_bottom < sticky_parent_offset.bottom){
 						setStickyPositions(sticky_element, sticky_down);
 					} else{
-						setStickyPositions(sticky_element, (sticky_parent_offset.height - sticky_offset.height) -  parseInt(getComputedStyle(sticky_element).marginBottom));
+						setStickyPositions(sticky_element, (sticky_parent_offset.height - sticky_offset.height) -  parseInt(getComputedStyle(sticky_element)["margin-bottom"], 10));
 					}
-				} else if(sticky_parent_offset.bottom < scroll_bottom){
-					setStickyPositions(sticky_element, (sticky_parent_offset.height - sticky_offset.height) -  parseInt(getComputedStyle(sticky_element).marginBottom));
 				}
-
 			});
 
 			session.pageYOffset = pageYOffset;
-		}
-
-		function getPostOnPage(el){
-			var rect = el.getBoundingClientRect();
-			var pageYOffset = window.pageYOffset;
-
-			return {
-				top: Math.floor(rect.top + pageYOffset), 
-				bottom: Math.floor(rect.bottom + pageYOffset), 
-				left: Math.floor(rect.left), 
-				right: Math.floor(rect.right), 
-				width: Math.floor(rect.width),
-				outerWidth: Math.floor(rect.width + (el.offsetLeft * 2)),
-				height: Math.floor(rect.height)
-			};
 		}
 
 		function getMethodScreenOffsetTop(){
@@ -158,7 +148,7 @@
 			}
 		}
 
-		function stickyEventResize(event){
+		function stickyEventResize(){
 			sticky_element_all.calculateSize();
 		}
 
@@ -171,34 +161,14 @@
 				case "transform":
 				case "translate":
 					return setStickyPostTranslate;
-				case "top":
-					return setStickyPostTop;
 				case "margin":
 				case "margin-top":
 					return setStickyPostMargin;
+				case "top":
+					return setStickyPostTop;
 				default:
 					return setStickyPostTranslate;
 			}
-			
-		}
-		
-
-		function setStickyPostMargin(el, x){
-			el.style.marginTop = x + "px";
-		}
-
-		function setStickyPostTop(el, x){
-			el.style.top = x + "px";
-		}
-
-		function setStickyPostTranslate(el, x){
-			var translate_css = "translate3d(0px, " + x + "px, 0px)";
-
-			el.style.webkitTransform = translate_css;
-			el.style.MozTransform = translate_css;
-			el.style.msTransform = translate_css;
-			el.style.OTransform = translate_css;
-			el.style.transform = translate_css;
 		}
 
 		function getStickyBySelector(selector){
@@ -237,12 +207,6 @@
 			return sticky_all_detalis;
 		}
 
-		function forEach(input_array, callback) {
-			for(var index = 0; index < input_array.length; index+=1){
-				callback(input_array[index], index);
-			}
-		}
-
 		function scrollEnd(callback){
 			options.scroll.timeout_fn && clearTimeout(options.scroll.timeout_fn);
 			options.scroll.timeout_fn = setTimeout(callback, options.scroll.delay);
@@ -251,12 +215,54 @@
 		return sticky_element_all;
 	}
 
+	function forEach(input_array, callback) {
+		for(var index = 0; index < input_array.length; index+=1){
+			callback(input_array[index], index);
+		}
+	}
+
+	function setStickyPostMargin(el, x){
+		el.style.marginTop = x + "px";
+	}
+
+	function setStickyPostTop(el, x){
+		el.style.top = x + "px";
+	}
+
+	function setStickyPostTranslate(el, x){
+		var translate_css = "translate3d(0px, " + x + "px, 0px)";
+
+		el.style.webkitTransform = translate_css;
+		el.style.MozTransform = translate_css;
+		el.style.msTransform = translate_css;
+		el.style.OTransform = translate_css;
+		el.style.transform = translate_css;
+	}
+
+	function getPostOnPage(el){
+		var rect = el.getBoundingClientRect();
+		var pageYOffset = window.pageYOffset;
+
+		return {
+			top: Math.floor(rect.top + pageYOffset), 
+			bottom: Math.floor(rect.bottom + pageYOffset), 
+			left: Math.floor(rect.left), 
+			right: Math.floor(rect.right), 
+			width: Math.floor(rect.width),
+			outerWidth: Math.floor(rect.width + (el.offsetLeft * 2)),
+			height: Math.floor(rect.height)
+		};
+	}
+
 	window.smoothSticky = smoothSticky;
 
 	if(window.jQuery){
 		(function($){
 			$.fn.smoothSticky = function(options){
-				window.smoothSticky(this.toArray(), options);
+				window.smoothSticky(
+					this.toArray(), 
+					ObjectAssign(options, { offsetTopElement: options.offsetTopElement[0] })
+				);
 			}
 		})(window.jQuery);
 	}
