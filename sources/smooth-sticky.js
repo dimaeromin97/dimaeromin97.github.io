@@ -23,148 +23,182 @@
 				return to;
 			};
 		
-	})();
+	})(),
+	eventsManager = {
+		add: function(e_type, fn, useCapture, callback){
+			callback = (typeof callback === "function") ? callback : function(){};
+			useCapture = (useCapture ? useCapture : false);
+			var function_name = getFunctionName(fn);
 
-	function smoothSticky(selector_or_node, options){
+			if(!this[e_type]){
+				this[e_type] = {};
+			}
+
+			if(!this[e_type][function_name]){
+				this[e_type][function_name] = true;
+				window.addEventListener(e_type, fn, useCapture);
+				callback.bind({
+					e_type: e_type,
+					fn: fn
+				})();
+			}
+		},
+		remove: function(e_type, fn, callback){
+			callback = (typeof callback === "function") ? callback : function(){};
+			var function_name = getFunctionName(fn);
+
+			window.removeEventListener(e_type, fn, false);
+			
+			if(this[e_type]){
+				if(this[e_type][function_name]){
+					delete this[e_type][function_name]
+					callback.bind({
+						e_type: e_type,
+						fn: fn
+					})();
+				}
+			}
+		}
+	};
+
+	function smoothSticky(selector_or_node, input_options){
 		var options_default = {
 			offsetTop: 0,
-			offsetTopElements: false,
-			scroll: {
-				delay: 66,
-				timeout_fn: null,
-			},
+			scroll_delay: 66,
+			scroll_timeout_fn: null,
+			onScroll: new Function,
 			resize: { min_width: 768 },
 			method_sticky: "transform",
-			indent: {
-				top: 0,
-				bottom: 0,
+			indent_top: 0,
+			indent_bottom: 0
+		},
+		// VAR
+		core = {
+			data: {
+				scroll: window.pageYOffset
+			},
+			session: { 
+				pageYOffset: window.pageYOffset
+			},
+			sticky_all: getStickyBySelector(selector_or_node),
+			options: ObjectAssign(options_default, input_options),
+			init: function(){
+				window.addEventListener('resize', generalEventResize, false);
+				registerEvents();
+				generalEventResize();
+			},
+			doScroll: function() {
+				stickyScrollEnd(); 
+			},
+			doMove: function(){
+				var pageYOffset = this.data.scroll,
+					scroll_top = pageYOffset + this.options.offsetTop,
+					scroll_bottom = pageYOffset + window.innerHeight,
+					scroll_to_top = (this.session.pageYOffset > pageYOffset);
+
+				forEach(this.sticky_all, function(item_stick){
+					var sticky_parent = item_stick.parent;
+						sticky_element = item_stick.element, 
+						sticky_post = getInfoSticky(sticky_element, sticky_parent),
+						sticky_diff_height = sticky_post.that.top - sticky_post.parent.top,
+						sticky_diff_scroll_top = MaxMinDiff(sticky_post.that.top, scroll_top),
+						sticky_from_top = sticky_post.top_rel;
+
+					if(sticky_post.sticky_outer_width >= sticky_post.parent_outer_width){
+						setPositions(sticky_element, 0);
+						return;
+					}
+
+					if(
+						scroll_to_top &&
+						sticky_post.that.top > scroll_top &&
+						sticky_post.that.top > sticky_post.parent.top
+					){
+						var sticky_up = (sticky_diff_height - sticky_diff_scroll_top) + this.options.indent_top;
+
+						if(sticky_up > 0 && sticky_up < sticky_post.it_extreme_bottom){
+							sticky_from_top = sticky_up;
+						} else if(sticky_up > sticky_post.it_extreme_bottom){
+							sticky_from_top = sticky_post.it_extreme_bottom;
+						} else{
+							sticky_from_top = 0;
+						}
+					} else if(
+						!scroll_to_top &&
+						sticky_post.that.bottom < scroll_bottom &&
+						sticky_post.parent.top < scroll_top
+					){
+						var sticky_down = (MaxMinDiff(scroll_bottom, sticky_post.that.bottom) + sticky_post.top_rel) - this.options.indent_bottom,
+							innerHeight_diff_height =  sticky_post.that.height > (window.innerHeight - this.options.offsetTop);
+
+						if(!innerHeight_diff_height){
+							if(document.documentElement.scrollHeight <= scroll_bottom){
+								sticky_from_top = sticky_post.it_extreme_bottom;
+							} else{
+								sticky_from_top = Math.min(sticky_down - ((window.innerHeight - this.options.offsetTop) - sticky_post.that.height) + (this.options.indent_top + this.options.indent_bottom), sticky_post.it_extreme_bottom);
+							}
+						} else if(scroll_bottom < sticky_post.parent.bottom){
+							sticky_from_top = Math.max(sticky_down, 0);
+						} else{
+							sticky_from_top = sticky_post.it_extreme_bottom;
+						}
+					}
+
+					if(sticky_from_top != sticky_post.top_rel){
+						setPositions(sticky_element, sticky_from_top);
+					}
+				}.bind(this));
+
+				this.session.pageYOffset = pageYOffset;
 			}
-		};
-		options = ObjectAssign(options_default, options);
-		var session = { pageYOffset: window.pageYOffset }
-		var sticky_element_all = getStickyBySelector(selector_or_node);
-		var setStickyPositions = getMethodSticky();
-		var getScreenOffsetTop = getMethodScreenOffsetTop();
+		},
+		setPositions = getMethodSticky();
 
-		sticky_element_all.__proto__.calculateSize = function(){
-			var do_min_width = window.innerWidth > options.resize.min_width;
+		core.init();
 
-			forEach(this, function(item, index){
-				var this_index = item;
-				var element_style = getComputedStyle(this_index.element);
-				var parent_style = getComputedStyle(this_index.parent);
-				var element_margin_side = parseFloat(element_style["margin-left"]) + parseFloat(element_style["margin-right"]);
-				var parent_margin_side = parseFloat(parent_style["margin-left"]) + parseFloat(parent_style["margin-right"]);
-				var element_offset = getPostOnPage(this_index.element);
-				var parrent_offset = getPostOnPage(this_index.parent);
-				var item_outer_width = element_offset.width + element_margin_side;
-				var parent_outer_width = parrent_offset.width + parent_margin_side;
-
-				this[index].is_active = (parent_outer_width > item_outer_width);
-
-				if(!this[index].is_active){
-					setStickyPositions(this_index.element, 0);
-				}
-
-				if(do_min_width){
-					if(element_offset.bottom > parrent_offset.bottom){
-						setTimeout(function(){
-							setStickyPositions(this_index.element, parrent_offset.height - element_offset.height);
-						}, 66)
-					} else if(this[index].is_active){
-						scrollEnd(smoothStickyMove);
-					}
-				}
-			}.bind(this));
-		};
-		sticky_element_all.__proto__.scroll = function() {
-			scrollEnd(smoothStickyMove);
-		}
-		sticky_element_all.__proto__.options = options;
-
-		window.addEventListener('scroll', stickyEventScroll, false);
-		window.addEventListener('resize', stickyEventResize, false);
-		stickyEventResize();
-		smoothStickyMove();
-
-		function smoothStickyMove(){
-			var scroll_top = getScreenOffsetTop();
-			console.log("scroll_top: ", scroll_top)
-			var pageYOffset = window.pageYOffset;
-			var scroll_bottom = pageYOffset + window.innerHeight;
-			var scroll_to_top = (session.pageYOffset > pageYOffset);
-			
-			forEach(sticky_element_all, function(item_stick){
-				if(!item_stick.is_active) return false;
-
-				var sticky_parent = item_stick.parent;
-				var sticky_element = item_stick.element;
-				var sticky_offset = getPostOnPage(sticky_element);
-				var sticky_parent_offset = getPostOnPage(sticky_parent);
-				var sticky_top_rel = sticky_offset.top - sticky_parent_offset.top;
-
-					console.log("scroll_top: ", scroll_top)
-					
-				if(
-					scroll_to_top &&
-					sticky_offset.top > scroll_top &&
-					sticky_offset.top > sticky_parent_offset.top
-				){
-					var sticky_up = (sticky_offset.top - sticky_parent_offset.top) - (Math.max(sticky_offset.top, scroll_top) - Math.min(sticky_offset.top, scroll_top)) + options.indent.top;
-
-					if(sticky_up > 0){
-						setStickyPositions(sticky_element, sticky_up);
-					} else{
-						setStickyPositions(sticky_element, 0);
-					}
-				} else if(
-					!scroll_to_top &&
-					sticky_offset.bottom < scroll_bottom &&
-					sticky_parent_offset.top < scroll_top
-				){
-					var sticky_down = (Math.max(scroll_bottom, sticky_offset.bottom) - Math.min(scroll_bottom, sticky_offset.bottom) + sticky_top_rel) - options.indent.bottom;
-
-					if(scroll_bottom < sticky_parent_offset.bottom){
-						setStickyPositions(sticky_element, Math.max(sticky_down, 0));
-					} else{
-						setStickyPositions(sticky_element, (sticky_parent_offset.height - sticky_offset.height) -  parseInt(getComputedStyle(sticky_element)["margin-bottom"], 10));
-					}
-				}
+		function registerEvents(){
+			eventsManager.add('scroll', stickyEventScroll, false, function(){
+				scrollEnd(this.fn());
 			});
-
-			session.pageYOffset = pageYOffset;
+			eventsManager.add('resize', stickyEventResize, false, function(){
+				scrollEnd(this.fn());
+			});
 		}
 
-		function getMethodScreenOffsetTop(){
-			if(options.offsetTopElements){
-				var offsetTopElements = Array.isArray(options.offsetTopElements) ? options.offsetTopElements : [options.offsetTopElements];
-
-				return function(){
-					options.offsetTop = window.pageYOffset;
-
-					forEach(offsetTopElements, function(item){
-						options.offsetTop += item.offsetHeight;
-					});
-
-					return options.offsetTop;
-				};
-			}
-
-			return  function(){
-				return window.pageYOffset + options.offsetTop;
-			}
+		function removeRegisteredEvents(){
+			eventsManager.remove('scroll', stickyEventScroll);
+			eventsManager.remove('resize', stickyEventResize, function(){
+				scrollEnd(this.fn);
+			});
 		}
 
-		function stickyEventResize(){
-			sticky_element_all.calculateSize();
+		function generalEventResize(){
+			console.log("generalEventResize");
+			if(core.options.resize.min_width >= window.innerWidth){
+				removeRegisteredEvents();
+			} else{
+				registerEvents();
+			}
 		}
 
 		function stickyEventScroll(){
-			sticky_element_all.scroll();
+			core.doScroll();
+		}
+
+		function stickyEventResize(){
+			setTimeout(function(){
+				core.session.pageYOffset-=1;
+				core.doScroll();
+
+				setTimeout(function(){
+					core.session.pageYOffset+=2;
+					core.doScroll();
+				}, core.options.scroll_delay);
+			}, core.options.scroll_delay);
 		}
 
 		function getMethodSticky(){
-			switch(options.method_sticky){
+			switch(core.options.method_sticky){
 				case "transform":
 				case "translate":
 					return setStickyPostTranslate;
@@ -197,15 +231,10 @@
 			var sticky_all_detalis = [];
 
 			forEach($sticky_all, function($item){
-				var $item_parent = $item.parentElement;
-				var item_post = getPostOnPage($item);
-				var parent_post = getPostOnPage($item_parent);
-				var item_details = {
+				var $item_parent = $item.parentElement,
+					item_details = {
 					element: $item,
-					element_size: item_post,
-					parent: $item_parent,
-					parent_size: parent_post,
-					is_active: (item_post.width <= parent_post.width)
+					parent: $item_parent
 				};
 
 				sticky_all_detalis.push(item_details);
@@ -215,11 +244,21 @@
 		}
 
 		function scrollEnd(callback){
-			options.scroll.timeout_fn && clearTimeout(options.scroll.timeout_fn);
-			options.scroll.timeout_fn = setTimeout(callback, options.scroll.delay);
+			core.options.scroll_timeout_fn && clearTimeout(core.options.scroll_timeout_fn);
+			core.options.scroll_timeout_fn = setTimeout(callback, core.options.scroll_delay);
 		}
 
-		return sticky_element_all;
+		function stickyScrollEnd(){
+			scrollEnd(stickyRunMove);
+		}
+
+		function stickyRunMove() {
+			core.data.scroll = window.pageYOffset;
+			core.options.onScroll.bind(core)();
+			core.doMove();
+		}
+
+		return core;
 	}
 
 	function forEach(input_array, callback) {
@@ -247,8 +286,8 @@
 	}
 
 	function getPostOnPage(el){
-		var rect = el.getBoundingClientRect();
-		var pageYOffset = window.pageYOffset;
+		var rect = el.getBoundingClientRect(),
+			pageYOffset = window.pageYOffset;
 
 		return {
 			top: Math.floor(rect.top + pageYOffset), 
@@ -261,15 +300,47 @@
 		};
 	}
 
+	function getFunctionName(fun) {
+		var ret = fun.toString();
+
+		ret = ret.substr('function '.length);
+		ret = ret.substr(0, ret.indexOf('('));
+
+		return ret;
+	}
+
+	function getInfoSticky(sticky_element, sticky_parent) {
+		var that = getPostOnPage(sticky_element),
+			parent = getPostOnPage(sticky_parent),
+			sticky_style = getComputedStyle(sticky_element), 
+			parent_style = getComputedStyle(sticky_parent),
+			sticky_margin_side = parseFloat(sticky_style["margin-left"]) + parseFloat(sticky_style["margin-right"]),
+			parent_margin_side = parseFloat(parent_style["margin-left"]) + parseFloat(parent_style["margin-right"]);
+			
+		return {
+			that: that, 
+			parent: parent,
+			sticky_style: sticky_style,
+			parent_style: parent_style,
+			top_rel: that.top - parent.top, 
+			it_extreme_bottom: (parent.height - that.height) -  parseInt(sticky_style["margin-bottom"], 10), 
+			sticky_margin_side: sticky_margin_side,
+			parent_margin_side: parent_margin_side,
+			sticky_outer_width: that.width + sticky_margin_side, 
+			parent_outer_width: parent.width + parent_margin_side
+		}
+	}
+
+	function MaxMinDiff(first, second){
+		return Math.max(first, second) - Math.min(first, second);
+	}
+
 	window.smoothSticky = smoothSticky;
 
 	if(window.jQuery){
 		(function($){
 			$.fn.smoothSticky = function(options){
-				window.smoothSticky(
-					this.toArray(), 
-					ObjectAssign(options, { offsetTopElements: options.offsetTopElements.toArray() })
-				);
+				return window.smoothSticky(this.toArray(), options);
 			}
 		})(window.jQuery);
 	}

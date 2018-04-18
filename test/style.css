@@ -75,6 +75,7 @@ body{
 	position: relative;
 	float: left;
 	min-height: 1px;
+	background-color: #ccc;
 }
 
 .column_inner{
@@ -158,7 +159,7 @@ body{
 	overflow: hidden
 }
 
-@media only screen and (max-width: 1024px) {
+@media only screen and (max-width: 768px) {
 	.column {
 		width: 95.2%;
 		margin-bottom: 20px;
