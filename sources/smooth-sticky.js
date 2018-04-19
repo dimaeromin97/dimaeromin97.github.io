@@ -98,54 +98,54 @@
 
 				forEach(this.sticky_all, function(item_stick){
 					var sticky_parent = item_stick.parent;
-						sticky_element = item_stick.element, 
-						sticky_post = getInfoSticky(sticky_element, sticky_parent),
-						sticky_diff_height = sticky_post.that.top - sticky_post.parent.top,
-						sticky_diff_scroll_top = MaxMinDiff(sticky_post.that.top, scroll_top),
+						sticky_el = item_stick.element, 
+						sticky_post = getInfoSticky(sticky_el, sticky_parent),
+						sticky_diff_height = sticky_post.current.top - sticky_post.parent.top,
+						sticky_diff_scroll_top = MaxMinDiff(sticky_post.current.top, scroll_top),
 						sticky_from_top = sticky_post.top_rel;
 
-					if(sticky_post.sticky_outer_width >= sticky_post.parent_outer_width){
-						setPositions(sticky_element, 0);
+					if(sticky_post.outer_width >= sticky_post.parent_outer_width){
+						setPositions(sticky_el, 0);
 						return;
 					}
 
 					if(
 						scroll_to_top &&
-						sticky_post.that.top > scroll_top &&
-						sticky_post.that.top > sticky_post.parent.top
+						sticky_post.current.top > scroll_top &&
+						sticky_post.current.top > sticky_post.parent.top
 					){
 						var sticky_up = (sticky_diff_height - sticky_diff_scroll_top) + this.options.indent_top;
 
-						if(sticky_up > 0 && sticky_up < sticky_post.it_extreme_bottom){
+						if(sticky_up > 0 && sticky_up < sticky_post.last_bottom){
 							sticky_from_top = sticky_up;
-						} else if(sticky_up > sticky_post.it_extreme_bottom){
-							sticky_from_top = sticky_post.it_extreme_bottom;
+						} else if(sticky_up > sticky_post.last_bottom){
+							sticky_from_top = sticky_post.last_bottom;
 						} else{
 							sticky_from_top = 0;
 						}
 					} else if(
 						!scroll_to_top &&
-						sticky_post.that.bottom < scroll_bottom &&
+						sticky_post.current.bottom < scroll_bottom &&
 						sticky_post.parent.top < scroll_top
 					){
-						var sticky_down = (MaxMinDiff(scroll_bottom, sticky_post.that.bottom) + sticky_post.top_rel) - this.options.indent_bottom,
-							innerHeight_diff_height =  sticky_post.that.height > (window.innerHeight - this.options.offsetTop);
+						var sticky_down = (MaxMinDiff(scroll_bottom, sticky_post.current.bottom) + sticky_post.top_rel) - this.options.indent_bottom,
+							innerHeight_diff_height =  sticky_post.current.height > (window.innerHeight - this.options.offsetTop);
 
 						if(!innerHeight_diff_height){
 							if(document.documentElement.scrollHeight <= scroll_bottom){
-								sticky_from_top = sticky_post.it_extreme_bottom;
+								sticky_from_top = sticky_post.last_bottom;
 							} else{
-								sticky_from_top = Math.min(sticky_down - ((window.innerHeight - this.options.offsetTop) - sticky_post.that.height) + (this.options.indent_top + this.options.indent_bottom), sticky_post.it_extreme_bottom);
+								sticky_from_top = Math.min(sticky_down - ((window.innerHeight - this.options.offsetTop) - sticky_post.current.height) + (this.options.indent_top + this.options.indent_bottom), sticky_post.last_bottom);
 							}
 						} else if(scroll_bottom < sticky_post.parent.bottom){
 							sticky_from_top = Math.max(sticky_down, 0);
 						} else{
-							sticky_from_top = sticky_post.it_extreme_bottom;
+							sticky_from_top = sticky_post.last_bottom;
 						}
 					}
 
 					if(sticky_from_top != sticky_post.top_rel){
-						setPositions(sticky_element, sticky_from_top);
+						setPositions(sticky_el, sticky_from_top);
 					}
 				}.bind(this));
 
@@ -173,7 +173,6 @@
 		}
 
 		function generalEventResize(){
-			console.log("generalEventResize");
 			if(core.options.resize.min_width >= window.innerWidth){
 				removeRegisteredEvents();
 			} else{
@@ -187,14 +186,14 @@
 
 		function stickyEventResize(){
 			setTimeout(function(){
-				core.session.pageYOffset-=1;
+				core.session.pageYOffset+=2;
 				core.doScroll();
 
 				setTimeout(function(){
-					core.session.pageYOffset+=2;
+					core.session.pageYOffset-=3;
 					core.doScroll();
-				}, core.options.scroll_delay);
-			}, core.options.scroll_delay);
+				}, 125);
+			}, 125);
 		}
 
 		function getMethodSticky(){
@@ -309,24 +308,24 @@
 		return ret;
 	}
 
-	function getInfoSticky(sticky_element, sticky_parent) {
-		var that = getPostOnPage(sticky_element),
+	function getInfoSticky(sticky_el, sticky_parent) {
+		var current = getPostOnPage(sticky_el),
 			parent = getPostOnPage(sticky_parent),
-			sticky_style = getComputedStyle(sticky_element), 
+			style = getComputedStyle(sticky_el), 
 			parent_style = getComputedStyle(sticky_parent),
-			sticky_margin_side = parseFloat(sticky_style["margin-left"]) + parseFloat(sticky_style["margin-right"]),
+			margin_side = parseFloat(style["margin-left"]) + parseFloat(style["margin-right"]),
 			parent_margin_side = parseFloat(parent_style["margin-left"]) + parseFloat(parent_style["margin-right"]);
 			
 		return {
-			that: that, 
+			current: current, 
 			parent: parent,
-			sticky_style: sticky_style,
+			style: style,
 			parent_style: parent_style,
-			top_rel: that.top - parent.top, 
-			it_extreme_bottom: (parent.height - that.height) -  parseInt(sticky_style["margin-bottom"], 10), 
-			sticky_margin_side: sticky_margin_side,
+			top_rel: current.top - parent.top, 
+			last_bottom: (parent.height - current.height) - parseInt(style["margin-bottom"], 10), 
+			margin_side: margin_side,
 			parent_margin_side: parent_margin_side,
-			sticky_outer_width: that.width + sticky_margin_side, 
+			outer_width: current.width + margin_side, 
 			parent_outer_width: parent.width + parent_margin_side
 		}
 	}
