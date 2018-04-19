@@ -27,6 +27,7 @@ gulp.task('task-js', () => {
 	gulp.src(paths.js.sources)
 		.pipe(uglify({
 			mangle: true,
+			toplevel: true,
 			output: {
 				beautify: false,
 				comments: true
