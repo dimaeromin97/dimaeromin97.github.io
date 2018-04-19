@@ -1,9 +1,9 @@
 /*
 	Smooth Sticky 
-	v1.0.0
+	v1.0.2
 */
 
-!(function(window){
+(function(window){
 	var ObjectAssign = (function(){
 			if(Object.assign){
 				return Object.assign;
@@ -22,44 +22,37 @@
 
 				return to;
 			};
-		
+			
 	})(),
 	eventsManager = {
-		add: function(e_type, fn, useCapture, callback){
-			callback = (typeof callback === "function") ? callback : function(){};
+		add: function(e_type, fn, useCapture, fun_run){
 			useCapture = (useCapture ? useCapture : false);
-			var function_name = getFunctionName(fn);
+			var fun_name = getFnName(fn);
 
 			if(!this[e_type]){
 				this[e_type] = {};
 			}
 
-			if(!this[e_type][function_name]){
-				this[e_type][function_name] = true;
+			if(!this[e_type][fun_name]){
+				this[e_type][fun_name] = true;
 				window.addEventListener(e_type, fn, useCapture);
-				callback.bind({
-					e_type: e_type,
-					fn: fn
-				})();
+				fun_run && fn();
 			}
 		},
-		remove: function(e_type, fn, callback){
-			callback = (typeof callback === "function") ? callback : function(){};
-			var function_name = getFunctionName(fn);
+		remove: function(e_type, fn, fun_run){
+			var fun_name = getFnName(fn);
 
 			window.removeEventListener(e_type, fn, false);
 			
 			if(this[e_type]){
-				if(this[e_type][function_name]){
-					delete this[e_type][function_name]
-					callback.bind({
-						e_type: e_type,
-						fn: fn
-					})();
+				if(this[e_type][fun_name]){
+					delete this[e_type][fun_name]
+					fun_run && fn();
 				}
 			}
 		}
-	};
+	},
+	css_support_transform = getSupportTransform();
 
 	function smoothSticky(selector_or_node, input_options){
 		var options_default = {
@@ -72,32 +65,40 @@
 			indent_top: 0,
 			indent_bottom: 0
 		},
-		// VAR
 		core = {
 			data: {
 				scroll: window.pageYOffset
 			},
 			session: { 
-				pageYOffset: window.pageYOffset
+				page_y_offset: window.pageYOffset
 			},
-			sticky_all: getStickyBySelector(selector_or_node),
+			sticky_all: getElBySelector(selector_or_node),
 			options: ObjectAssign(options_default, input_options),
 			init: function(){
-				window.addEventListener('resize', generalEventResize, false);
-				registerEvents();
-				generalEventResize();
+				eventsManager.add('resize', this.generalEventResize.bind(this), false);
+				this.generalEventResize();
+				this.registerEvents();
 			},
-			doScroll: function() {
-				stickyScrollEnd(); 
+			generalEventResize: function(){
+				if(this.options.resize.min_width >= window.innerWidth){
+					this.removeRegisteredEvents();
+				} else{
+					this.registerEvents();
+				}
+			},
+			doScrollEnd: function() {
+				this.scrollEnd(this.stickyRunMove.bind(this)); 
 			},
 			doMove: function(){
-				var pageYOffset = this.data.scroll,
-					scroll_top = pageYOffset + this.options.offsetTop,
-					scroll_bottom = pageYOffset + window.innerHeight,
-					scroll_to_top = (this.session.pageYOffset > pageYOffset);
+				var page_y_offset = this.data.scroll,
+					scroll_top = page_y_offset + this.options.offsetTop,
+					inner_height = window.innerHeight,
+					scroll_bottom = page_y_offset + inner_height,
+					scroll_to_top = (this.session.page_y_offset > page_y_offset);
 
-				forEach(this.sticky_all, function(item_stick){
-					var sticky_parent = item_stick.parent;
+				for(var index = 0; index < this.sticky_all.length; index+=1){
+					var item_stick = this.sticky_all[index];
+						sticky_parent = item_stick.parent;
 						sticky_el = item_stick.element, 
 						sticky_post = getInfoSticky(sticky_el, sticky_parent),
 						sticky_diff_height = sticky_post.current.top - sticky_post.parent.top,
@@ -106,10 +107,8 @@
 
 					if(sticky_post.outer_width >= sticky_post.parent_outer_width){
 						setPositions(sticky_el, 0);
-						return;
-					}
-
-					if(
+						continue;
+					} else if(
 						scroll_to_top &&
 						sticky_post.current.top > scroll_top &&
 						sticky_post.current.top > sticky_post.parent.top
@@ -129,13 +128,13 @@
 						sticky_post.parent.top < scroll_top
 					){
 						var sticky_down = (MaxMinDiff(scroll_bottom, sticky_post.current.bottom) + sticky_post.top_rel) - this.options.indent_bottom,
-							innerHeight_diff_height =  sticky_post.current.height > (window.innerHeight - this.options.offsetTop);
+							innerHeight_diff_height =  sticky_post.current.height > (inner_height - this.options.offsetTop);
 
 						if(!innerHeight_diff_height){
 							if(document.documentElement.scrollHeight <= scroll_bottom){
 								sticky_from_top = sticky_post.last_bottom;
 							} else{
-								sticky_from_top = Math.min(sticky_down - ((window.innerHeight - this.options.offsetTop) - sticky_post.current.height) + (this.options.indent_top + this.options.indent_bottom), sticky_post.last_bottom);
+								sticky_from_top = Math.min(sticky_down - ((inner_height - this.options.offsetTop) - sticky_post.current.height) + (this.options.indent_top + this.options.indent_bottom), sticky_post.last_bottom);
 							}
 						} else if(scroll_bottom < sticky_post.parent.bottom){
 							sticky_from_top = Math.max(sticky_down, 0);
@@ -144,74 +143,70 @@
 						}
 					}
 
-					if(sticky_from_top != sticky_post.top_rel){
-						setPositions(sticky_el, sticky_from_top);
-					}
-				}.bind(this));
+					sticky_from_top != sticky_post.top_rel && setPositions(sticky_el, sticky_from_top);
+				}
 
-				this.session.pageYOffset = pageYOffset;
+				this.session.page_y_offset = page_y_offset;
+			},
+			stickyRunMove: function () {
+				this.data.scroll = window.pageYOffset;
+				this.options.onScroll.bind(this)();
+				this.doMove();
+			},
+			scrollEnd: function(callback){
+				this.options.scroll_timeout_fn && clearTimeout(this.options.scroll_timeout_fn);
+				this.options.scroll_timeout_fn = setTimeout(callback, this.options.scroll_delay);
+			},
+			stickyEventResize: function(){
+				setTimeout(function(){
+					this.session.page_y_offset+=2;
+					this.doScrollEnd();
+
+					setTimeout(function(){
+						this.session.page_y_offset-=3;
+						this.doScrollEnd();
+					}.bind(this), 125);
+				}.bind(this), 125);
+			},
+			removeRegisteredEvents: function(){
+				eventsManager.remove('scroll', stickyEventScroll);
+				eventsManager.remove('resize', this.stickyEventResize.bind(this), true);
+			},
+			registerEvents: function(){
+				eventsManager.add('scroll', stickyEventScroll, false, true);
+				eventsManager.add('resize', this.stickyEventResize.bind(this), false, true);
 			}
 		},
-		setPositions = getMethodSticky();
-
-		core.init();
-
-		function registerEvents(){
-			eventsManager.add('scroll', stickyEventScroll, false, function(){
-				scrollEnd(this.fn());
-			});
-			eventsManager.add('resize', stickyEventResize, false, function(){
-				scrollEnd(this.fn());
-			});
-		}
-
-		function removeRegisteredEvents(){
-			eventsManager.remove('scroll', stickyEventScroll);
-			eventsManager.remove('resize', stickyEventResize, function(){
-				scrollEnd(this.fn);
-			});
-		}
-
-		function generalEventResize(){
-			if(core.options.resize.min_width >= window.innerWidth){
-				removeRegisteredEvents();
-			} else{
-				registerEvents();
-			}
-		}
+		setPositions = getMethodSticky(core.options.method_sticky);
 
 		function stickyEventScroll(){
-			core.doScroll();
+			core.doScrollEnd();
 		}
 
-		function stickyEventResize(){
-			setTimeout(function(){
-				core.session.pageYOffset+=2;
-				core.doScroll();
-
-				setTimeout(function(){
-					core.session.pageYOffset-=3;
-					core.doScroll();
-				}, 125);
-			}, 125);
-		}
-
-		function getMethodSticky(){
-			switch(core.options.method_sticky){
+		function getMethodSticky(method){
+			switch(method){
 				case "transform":
 				case "translate":
-					return setStickyPostTranslate;
+					return setPostTranslate;
 				case "margin":
 				case "margin-top":
-					return setStickyPostMargin;
+					return function(el, x){
+						el.style.marginTop = x + "px";
+					}
 				case "top":
-					return setStickyPostTop;
+					return function(el, x){
+						el.style.top = x + "px";
+					}
 				default:
-					return setStickyPostTranslate;
+					return setPostTranslate;
 			}
 		}
 
-		function getStickyBySelector(selector){
+		function setPostTranslate(el, x){
+			el.style[css_support_transform]= "translate(0px, " + x + "px)";
+		}
+
+		function getElBySelector(selector){
 			var $sticky_all = (function(){
 				var selector_type = typeof selector;
 
@@ -229,68 +224,43 @@
 			})();
 			var sticky_all_detalis = [];
 
-			forEach($sticky_all, function($item){
-				var $item_parent = $item.parentElement,
-					item_details = {
-					element: $item,
-					parent: $item_parent
-				};
+			for(var index = 0; index < $sticky_all.length; index+=1){
+				var $item = $sticky_all[index];
 
-				sticky_all_detalis.push(item_details);
-			});
+				sticky_all_detalis.push({
+					element: $item,
+					parent: $item.parentElement
+				});
+			}
 
 			return sticky_all_detalis;
 		}
 
-		function scrollEnd(callback){
-			core.options.scroll_timeout_fn && clearTimeout(core.options.scroll_timeout_fn);
-			core.options.scroll_timeout_fn = setTimeout(callback, core.options.scroll_delay);
-		}
-
-		function stickyScrollEnd(){
-			scrollEnd(stickyRunMove);
-		}
-
-		function stickyRunMove() {
-			core.data.scroll = window.pageYOffset;
-			core.options.onScroll.bind(core)();
-			core.doMove();
-		}
+		core.init();
 
 		return core;
 	}
 
-	function forEach(input_array, callback) {
-		for(var index = 0; index < input_array.length; index+=1){
-			callback(input_array[index], index);
+	function getSupportTransform() {
+		var prefixes = 'transform webkitTransform MozTransform OTransform msTransform'.split(' ');
+		var div = document.createElement('div');
+
+		for(var i = 0; i < prefixes.length; i+=1) {
+			if(div && div.style[prefixes[i]] !== undefined) {
+				return prefixes[i];
+			}
 		}
-	}
 
-	function setStickyPostMargin(el, x){
-		el.style.marginTop = x + "px";
-	}
-
-	function setStickyPostTop(el, x){
-		el.style.top = x + "px";
-	}
-
-	function setStickyPostTranslate(el, x){
-		var translate_css = "translate3d(0px, " + x + "px, 0px)";
-
-		el.style.webkitTransform = translate_css;
-		el.style.MozTransform = translate_css;
-		el.style.msTransform = translate_css;
-		el.style.OTransform = translate_css;
-		el.style.transform = translate_css;
+		return false;
 	}
 
 	function getPostOnPage(el){
 		var rect = el.getBoundingClientRect(),
-			pageYOffset = window.pageYOffset;
+			page_y_offset = window.pageYOffset;
 
 		return {
-			top: Math.floor(rect.top + pageYOffset), 
-			bottom: Math.floor(rect.bottom + pageYOffset), 
+			top: Math.floor(rect.top + page_y_offset), 
+			bottom: Math.floor(rect.bottom + page_y_offset), 
 			left: Math.floor(rect.left), 
 			right: Math.floor(rect.right), 
 			width: Math.floor(rect.width),
@@ -299,7 +269,7 @@
 		};
 	}
 
-	function getFunctionName(fun) {
+	function getFnName(fun) {
 		var ret = fun.toString();
 
 		ret = ret.substr('function '.length);
@@ -313,8 +283,8 @@
 			parent = getPostOnPage(sticky_parent),
 			style = getComputedStyle(sticky_el), 
 			parent_style = getComputedStyle(sticky_parent),
-			margin_side = parseFloat(style["margin-left"]) + parseFloat(style["margin-right"]),
-			parent_margin_side = parseFloat(parent_style["margin-left"]) + parseFloat(parent_style["margin-right"]);
+			margin_side = addNum(style["margin-left"], style["margin-right"]),
+			parent_margin_side = addNum(parent_style["margin-left"], parent_style["margin-right"]);
 			
 		return {
 			current: current, 
@@ -327,7 +297,17 @@
 			parent_margin_side: parent_margin_side,
 			outer_width: current.width + margin_side, 
 			parent_outer_width: parent.width + parent_margin_side
+		};
+	}
+
+	function addNum(arr){
+		var common = 0;
+
+		for(var index = 0; index < arr.length; index+=1){
+			common += parseFloat(arr[index]);
 		}
+
+		return common;
 	}
 
 	function MaxMinDiff(first, second){

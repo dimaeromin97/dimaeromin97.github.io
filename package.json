@@ -1,7 +1,7 @@
 {
   "name": "smooth-sticky.js",
   "version": "1.0.3",
-  "description": "",
+  "description": "Vanilla js plugin",
   "main": "gulp.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

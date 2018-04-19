@@ -87,15 +87,37 @@ body{
 .column_sticky{
 	position: relative;
 	top: 0;
-	transition: top .3s ease,
-				-webkit-transform .3s ease, 
-				-moz-transform .3s ease, 
-				-ms-transform .3s ease, 
-				-o-transform .3s ease, 
-				transform .3s ease, 
-				margin-top .3s ease;
+	-webkit-transition: top 0.3s ease,
+		-moz-transform 0.3s ease, 
+		-ms-transform 0.3s ease, 
+		-o-transform 0.3s ease, 
+		transform 0.3s ease, 
+		margin-top 0.3s ease,
+		-webkit-transform 0.3s ease;
+	-moz-transition: top 0.3s ease,
+		-moz-transform 0.3s ease, 
+		-ms-transform 0.3s ease, 
+		-o-transform 0.3s ease, 
+		transform 0.3s ease, 
+		margin-top 0.3s ease,
+		-webkit-transform 0.3s ease;
+	-o-transition: top 0.3s ease,
+		-moz-transform 0.3s ease, 
+		-ms-transform 0.3s ease, 
+		-o-transform 0.3s ease, 
+		transform 0.3s ease, 
+		margin-top 0.3s ease,
+		-webkit-transform 0.3s ease;
+	transition: top 0.3s ease,
+		-moz-transform 0.3s ease, 
+		-ms-transform 0.3s ease, 
+		-o-transform 0.3s ease, 
+		transform 0.3s ease, 
+		margin-top 0.3s ease,
+		-webkit-transform 0.3s ease;
+		
 	display: block;
-	border: 1px solid #00f;
+	/* border: 1px solid #00f; */
 	background-color: #ccc;
 }
 
@@ -123,7 +145,7 @@ body{
 }
 
 .diff{
-	border: 2px solid #f00;
+	border: 0px solid #f00;
 }
 
 #header{
@@ -132,17 +154,17 @@ body{
 	z-index: 5;
 	width: 100%;
 	background-color: #ccc;
-	height: 85px;
+	height: 81px;
 	text-align: center;
 	border-bottom: 1px solid #000;
 }
 
 #middle{
-	padding: 85px 0 0;
+	padding: 110px 0 0;
 }
 
 .middle_inner{
-	padding: 30px 0;
+	padding: 40px 0;
 }
 
 #bottom:after,

@@ -1,8 +1,8 @@
 window.addEventListener("load", function() {
 
 	var smoothStickyMethod = smoothSticky(".column_sticky", {
-		indent_top: 32,
-		indent_bottom: 32,
+		indent_top: 35,
+		indent_bottom: 35,
 		onScroll: function(){
 			this.options.offsetTop = document.getElementById("header").offsetHeight +  document.getElementById("adminbar").offsetHeight;
 		}
@@ -13,8 +13,11 @@ window.addEventListener("load", function() {
 	//OR
 
 	$(".column_sticky").smoothSticky({
-		indent_top: 30,
-		indent_bottom: 30
+		indent_top: 35,
+		indent_bottom: 35,
+		onScroll: function(){
+			this.options.offsetTop = $("header").height() +  $("adminbar").height();
+		}
 	});
 
 });

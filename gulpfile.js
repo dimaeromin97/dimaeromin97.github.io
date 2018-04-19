@@ -25,13 +25,13 @@ gulp.task('browser-sync', ["task-js"], () => {
 
 gulp.task('task-js', () => {
 	gulp.src(paths.js.sources)
-		// .pipe(uglify({
-		// 	mangle: true,
-		// 	output: {
-		// 		beautify: false,
-		// 		comments: true
-		// 	}
-		// }))
+		.pipe(uglify({
+			mangle: true,
+			output: {
+				beautify: false,
+				comments: true
+			}
+		}))
 		.pipe(concat('smooth-sticky.min.js'))
 		.pipe(gulp.dest('C:/OpenServer/domains/mihalich-themes.net/wp-content/themes/mihalich/js/'));
 });
