@@ -88,6 +88,10 @@ body{
 	position: relative;
 	top: 0;
 	transition: top .3s ease,
+				-webkit-transform .3s ease, 
+				-moz-transform .3s ease, 
+				-ms-transform .3s ease, 
+				-o-transform .3s ease, 
 				transform .3s ease, 
 				margin-top .3s ease;
 	display: block;
